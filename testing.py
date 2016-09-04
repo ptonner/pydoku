@@ -46,6 +46,10 @@ class SudokuTest(ParametrizedTestCase):
         # print 'param =', self.param
         self.assertTrue(self.sudoku.check())
 
+    def test_solveComplicated(self):
+        self.sudoku.solve_moreComplicated()
+        self.assertTrue(self.sudoku.check())
+
 
 if __name__=="__main__":
 
