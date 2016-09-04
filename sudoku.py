@@ -17,10 +17,9 @@ class Sudoku():
 		self.b = b = int(n**(.5)) # box size
 		self.p = self.n**3 # size of objective
 		
-		#self.clues = array([[int(c) for c in x.strip()] for x in clues.split("\n")])
-		#self.clues = array([[int(c) for c in x.strip() if not c=="." else 0] for x in clues.split("\n")])
-		self.clues = array([int(c) if not c=="." else 0 for c in clues])
-		self.clues = self.clues.reshape((self.n,self.n))
+		# self.clues = array([int(c) if not c=="." else 0 for c in clues])
+		# self.clues = self.clues.reshape((self.n,self.n))
+		self.clues = clues
 		self.c = sum(self.clues!=0)
 		
 		self.board = self.clues.copy()
@@ -43,7 +42,6 @@ class Sudoku():
 		1,...,n; each cell can only have a single value 0 < k < n+1;
 		and any clues provided for the puzzle.
 		"""
-
 		
 		if self.constraints:
 			return self.constraints
@@ -106,6 +104,25 @@ class Sudoku():
 		self.rhs = ones(self.constraints.shape[0])
 		
 		return self.constraints
+
+	def solve_moreComplicated(self):
+		if self.constraints is None:
+			self.constraintMatrix()
+			
+		n = self.n
+
+		"""
+			| C  -C|
+		G = |-C   C|
+			|  -I  |
+		"""
+		G = cvxopt.matrix(row_stack((column_stack((self.constraints,-self.constraints)),
+			       column_stack((-self.constraints,self.constraints)),
+			       -identity(2*self.p))))
+		h = cvxopt.matrix(concatenate((self.rhs,-self.rhs,zeros((2*n**3)))))
+
+		self.u = solvers.lp(cvxopt.matrix(ones((2*n**3))),G,h)
+		self.x = array(self.u['x'][:n**3])
 		
 		
 	def solve(self):
@@ -113,16 +130,55 @@ class Sudoku():
 			self.constraintMatrix()
 			
 		n = self.n
+
+		"""
+			| C  -C|
+		G = |-C   C|
+			|  -I  |
+		"""
 		G = cvxopt.matrix(row_stack((column_stack((self.constraints,-self.constraints)),
 			       column_stack((-self.constraints,self.constraints)),
-			       -identity(2*n**3))))
+			       -identity(2*self.p))))
 		h = cvxopt.matrix(concatenate((self.rhs,-self.rhs,zeros((2*n**3)))))
+
+		# G = cvxopt.matrix(row_stack((column_stack((self.constraints,-self.constraints)),
+		# 	       column_stack((-self.constraints,self.constraints)))))
+		# h = cvxopt.matrix(concatenate((self.rhs,-self.rhs)))
+
+		G1 = column_stack((self.constraints,-self.constraints))
+		G2 = column_stack((-self.constraints,self.constraints))
+		G3 = -identity(2*self.p)
+
+		#######
+
+		G1 = self.constraints
+		G3 = -identity(self.p)
+
+		G = cvxopt.matrix(row_stack((G1,G3)))
+		h = cvxopt.matrix(concatenate((self.rhs,np.zeros(G3.shape[0]))))
+
+		##########
+
+		"""
+			| C|
+		G = |-C|
+			|-I|
+		"""
+
+		G1 = self.constraints
+		G2 = -self.constraints
+		G3 = -identity(self.p)
+
+		G = cvxopt.matrix(row_stack((G1,G2,G3)))
+		h = cvxopt.matrix(concatenate((self.rhs,-self.rhs,np.zeros(G3.shape[0]))))
 		
+		c = cvxopt.matrix(ones(G.size[1]))
+
 		# self.u = solvers.lp(cvxopt.matrix(ones((2*n**3))),G,h,solver="glpk")
-		self.u = solvers.lp(cvxopt.matrix(ones((2*self.p))),G,h,solver=None)
+		# solver.options['show_progress'] = False
+		self.u = solvers.lp(c,G,h,solver=None)
 		self.x = array(self.u['x'][:n**3])
-		
-		
+
 	def solution(self):
 	
 		if self.x is None:
@@ -163,13 +219,11 @@ class Sudoku():
 		
 		# check objective function
 		check = check and np.all(np.round(dot(self.constraints,self.x)).astype(int)==1)
-		# check = all([check,np.all(np.round(dot(self.constraints,self.x)).astype(int)==1)])
 	
 		# boxes
-		check = all([check,
-			all(map(lambda i: map(lambda j: sum(self.sol[i*self.b:(i+1)*self.b,j*self.b:(j+1)*self.b]), range(self.b)), range(self.b)) == sum(arange(self.n)+1))])
+		# check = all([check,
+		# 	all(map(lambda i: map(lambda j: sum(self.sol[i*self.b:(i+1)*self.b,j*self.b:(j+1)*self.b]), range(self.b)), range(self.b)) == sum(arange(self.n)+1))])
 	
 		self.solved = check
 		return check
-		
 		

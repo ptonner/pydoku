@@ -1,4 +1,6 @@
 import sudoku as sd
+import numpy as np
+
 
 def top95():
 	
@@ -8,10 +10,29 @@ def top95():
 		probs.append(sd.Sudoku(9,p.strip()))
 	return probs
 
+import os
+_puzzles = os.listdir('puzzles')
+_puzzles.sort()
+def puzzles(i=0):
+
+    f = os.path.join('puzzles',_puzzles[i])
+    l = filter(lambda z: not z[0]=='#', open(f).readlines())#[z if not z[0]=="#" else '' for z in f.readlines()]
+
+    return matrixize(convert(lambda :"".join(l)))
+
+def matrixize(f):
+    s = f()
+    a = np.array([int(c) if not c=="." else 0 for c in s])
+    n = int(np.sqrt(a.shape[0]))
+    a = a.reshape((n,n))
+
+    return lambda : a
+
 def convert(f):
 
     return lambda: f().replace("\n","").replace("\t","").replace(" ","").replace("0",'.')
 
+@matrixize
 @convert
 def sample():
     """
