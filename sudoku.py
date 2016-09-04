@@ -105,7 +105,7 @@ class Sudoku():
 		
 		return self.constraints
 
-	def solve_moreComplicated(self):
+	def solve_moreComplicated(self,verbose=False):
 		if self.constraints is None:
 			self.constraintMatrix()
 			
@@ -120,44 +120,18 @@ class Sudoku():
 			       column_stack((-self.constraints,self.constraints)),
 			       -identity(2*self.p))))
 		h = cvxopt.matrix(concatenate((self.rhs,-self.rhs,zeros((2*n**3)))))
+
+		cvxopt.solvers.options['show_progress'] = verbose
 
 		self.u = solvers.lp(cvxopt.matrix(ones((2*n**3))),G,h)
 		self.x = array(self.u['x'][:n**3])
 		
 		
-	def solve(self):
+	def solve(self,verbose=False):
 		if self.constraints is None:
 			self.constraintMatrix()
 			
 		n = self.n
-
-		"""
-			| C  -C|
-		G = |-C   C|
-			|  -I  |
-		"""
-		G = cvxopt.matrix(row_stack((column_stack((self.constraints,-self.constraints)),
-			       column_stack((-self.constraints,self.constraints)),
-			       -identity(2*self.p))))
-		h = cvxopt.matrix(concatenate((self.rhs,-self.rhs,zeros((2*n**3)))))
-
-		# G = cvxopt.matrix(row_stack((column_stack((self.constraints,-self.constraints)),
-		# 	       column_stack((-self.constraints,self.constraints)))))
-		# h = cvxopt.matrix(concatenate((self.rhs,-self.rhs)))
-
-		G1 = column_stack((self.constraints,-self.constraints))
-		G2 = column_stack((-self.constraints,self.constraints))
-		G3 = -identity(2*self.p)
-
-		#######
-
-		G1 = self.constraints
-		G3 = -identity(self.p)
-
-		G = cvxopt.matrix(row_stack((G1,G3)))
-		h = cvxopt.matrix(concatenate((self.rhs,np.zeros(G3.shape[0]))))
-
-		##########
 
 		"""
 			| C|
@@ -174,12 +148,13 @@ class Sudoku():
 		
 		c = cvxopt.matrix(ones(G.size[1]))
 
-		# self.u = solvers.lp(cvxopt.matrix(ones((2*n**3))),G,h,solver="glpk")
-		# solver.options['show_progress'] = False
+		cvxopt.solvers.options['show_progress'] = verbose
+
 		self.u = solvers.lp(c,G,h,solver=None)
 		self.x = array(self.u['x'][:n**3])
+		self.xround = self.x.round()
 
-	def solution(self):
+	def solution(self,verbose=False):
 	
 		if self.x is None:
 			self.solve()
@@ -195,15 +170,17 @@ class Sudoku():
 		
 		    if not self.sol[row,col]==0:
 		    	self.solved = False
-		    	print "Error: %d,%d already set!" % (row, col)	
-		    	print ind,(ind/n)*n,((ind/n)+1)*n
-		    	print self.x[(ind/n)*n:((ind/n)+1)*n]
+
+		    	if verbose:
+					print "Error: %d,%d already set!" % (row, col)	
+					print ind,(ind/n)*n,((ind/n)+1)*n
+					print self.x[(ind/n)*n:((ind/n)+1)*n]
 		    
 		    self.sol[row,col] = val+1
 			    		
 		return self.sol
 		
-	def check(self):
+	def check(self,verbose=False):
 		
 		if self.constraints is None:
 			print "Build constraints..."
@@ -213,16 +190,12 @@ class Sudoku():
 			self.solve()
 		if self.sol is None:
 			print "Find solution..."
-			self.solution()
+			self.solution(verbose=verbose)
 	
 		check = self.solved
 		
 		# check objective function
 		check = check and np.all(np.round(dot(self.constraints,self.x)).astype(int)==1)
-	
-		# boxes
-		# check = all([check,
-		# 	all(map(lambda i: map(lambda j: sum(self.sol[i*self.b:(i+1)*self.b,j*self.b:(j+1)*self.b]), range(self.b)), range(self.b)) == sum(arange(self.n)+1))])
 	
 		self.solved = check
 		return check
