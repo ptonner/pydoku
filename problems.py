@@ -1,36 +1,42 @@
-import sudoku as sd
+# import pydoku.solver as slv
 import numpy as np
 
 
 def top95():
-	
-	f = open("top95.txt")
-	probs = []
-	for p in f.readlines():
-		probs.append(sd.Sudoku(9,p.strip()))
-	return probs
 
-import os
-_puzzles = os.listdir('puzzles')
-_puzzles.sort()
+    f = open("top95.txt")
+    probs = []
+    for p in f.readlines():
+        probs.append(slv.convex.Convex(9, p.strip()))
+    return probs
+
+# import os
+# _puzzles = os.listdir('puzzles')
+# _puzzles.sort()
+
+
 def puzzles(i=0):
 
-    f = os.path.join('puzzles',_puzzles[i])
-    l = filter(lambda z: not z[0]=='#', open(f).readlines())#[z if not z[0]=="#" else '' for z in f.readlines()]
+    f = os.path.join('puzzles', _puzzles[i])
+    l = filter(lambda z: not z[0] == '#', open(f).readlines())
+               # [z if not z[0]=="#" else '' for z in f.readlines()]
 
-    return matrixize(convert(lambda :"".join(l)))
+    return matrixize(convert(lambda: "".join(l)))
+
 
 def matrixize(f):
     s = f()
-    a = np.array([int(c) if not c=="." else 0 for c in s])
+    a = np.array([int(c) if not c == "." else 0 for c in s])
     n = int(np.sqrt(a.shape[0]))
-    a = a.reshape((n,n))
+    a = a.reshape((n, n))
 
-    return lambda : a
+    return lambda: a
+
 
 def convert(f):
 
-    return lambda: f().replace("\n","").replace("\t","").replace(" ","").replace("0",'.')
+    return lambda: f().replace("\n", "").replace("\t", "").replace(" ", "").replace("0", '.')
+
 
 @matrixize
 @convert
@@ -47,7 +53,9 @@ def sample():
         040081009
         017000208
         050037000"""
-    
+
+
+@matrixize
 @convert
 def sample_hard():
     """
@@ -62,7 +70,9 @@ def sample_hard():
         000603070
         500200000
         104000000"""
-    
+
+
+@matrixize
 @convert
 def sample_tricky():
     """
@@ -77,7 +87,9 @@ def sample_tricky():
         009002008
         070004000
         250800600"""
-    
+
+
+@matrixize
 @convert
 def sample_moderate():
     """
