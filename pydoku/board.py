@@ -143,10 +143,32 @@ class Board(object):
         ret = True
 
         for i in range(self.n):
-            ret = ret and sum(l == i + 1) == 1
+            ret = ret and sum(l == (i + 1)) == 1
 
         ret = ret and l.shape[0] == self.n
         return ret
+
+    def _group_errors(self, g):
+
+        for i in range(self.n):
+            s = sum(g == (i + 1))
+            if not (s == 1 or s == 0):
+                yield i + 1
+
+    def errors(self):
+        for i in range(self.n):
+            for e in self._group_errors(self.board[:, i]):
+                yield 'col', i, e
+
+            for e in self._group_errors(self.board[i, :]):
+                yield 'row', i, e
+
+        # check blocks
+        for i in range(self.r):
+            for j in range(self.r):
+                g = self.board[i * self.r:(i + 1) * self.r, j * self.r:(j + 1) * self.r].ravel()
+                for e in self._group_errors(g):
+                    yield 'block', (i, j), e
 
     def solved(self,):
         solved = True
