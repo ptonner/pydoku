@@ -1,6 +1,7 @@
 import numpy as np
 import Tkinter as tk
 from copy import deepcopy
+import math
 
 
 class Board(object):
@@ -188,3 +189,36 @@ class Board(object):
                 solved = solved and self._validate_group(g)
 
         return solved
+
+    @property
+    def wordSize(self):
+        """the number of bits needed to store a single cell's values"""
+        return int(math.ceil(math.log(self.n + 1, 2)))
+
+    def toInt(self, wordSize=None):
+
+        # the number of bits needed for each cell
+        if wordSize is None:
+            wordSize = self.wordSize
+
+        return Board._toInt(self, wordSize)
+
+    @staticmethod
+    def _toInt(board, wordSize):
+        r = 0
+        for i in range(board.n):
+            for j in range(board.n):
+                r += int(board[i, j]) << ((board.n * j) + i) * wordSize
+
+        return r
+
+    @staticmethod
+    def fromInt(integer, n, wordSize):
+        board = np.zeros((n, n), dtype=int)
+        mask = int(math.pow(2, wordSize) - 1)
+
+        for i in range(n):
+            for j in range(n):
+                board[i, j] = (integer >> ((n * j) + i) * wordSize) & mask
+
+        return Board(board)
